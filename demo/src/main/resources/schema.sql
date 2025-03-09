@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS board (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS board_column (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  board_id INT NOT NULL,
+  name VARCHAR(100) NOT NULL,
+  type VARCHAR(50) NOT NULL,
+  `order` INT NOT NULL,
+  FOREIGN KEY (board_id) REFERENCES board(id)
+);
+
+CREATE TABLE IF NOT EXISTS card (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  column_id INT NOT NULL,
+  title VARCHAR(100) NOT NULL,
+  description TEXT,
+  created_at DATETIME NOT NULL,
+  blocked TINYINT(1) NOT NULL DEFAULT 0,
+  FOREIGN KEY (column_id) REFERENCES board_column(id)
+);
