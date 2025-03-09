@@ -40,10 +40,36 @@ public class CardService {
         if(currentIndex >= columns.size() - 1) throw new IllegalStateException("Última coluna alcançada");
         
         Column nextColumn = columns.get(currentIndex + 1);
+        if(nextColumn.getType().equals("Cancelamento")) {
+            throw new IllegalStateException("Use a opção específica de cancelamento");
+        }
+        
         card.setColumnId(nextColumn.getId());
         card.setMovedAt(LocalDateTime.now());
         cardRepository.update(card);
         logMovement(cardId, currentColumnId, nextColumn.getId());
+    }
+
+    public void cancelCard(int cardId) {
+        Card card = cardRepository.findById(cardId);
+        if(card == null) throw new IllegalArgumentException("Card não encontrado");
+        if(card.isBlocked()) throw new IllegalStateException("Card bloqueado!");
+        
+        Column currentColumn = columnRepository.findById(card.getColumnId());
+        if(currentColumn.getType().equals("Final")) {
+            throw new IllegalArgumentException("Não pode cancelar card da coluna final!");
+        }
+        
+        List<Column> columns = columnRepository.findByBoardId(currentColumn.getBoardId());
+        Column cancelamento = columns.stream()
+            .filter(c -> c.getType().equals("Cancelamento"))
+            .findFirst()
+            .orElseThrow(() -> new IllegalStateException("Coluna de cancelamento não encontrada"));
+        
+        card.setColumnId(cancelamento.getId());
+        card.setMovedAt(LocalDateTime.now());
+        cardRepository.update(card);
+        logMovement(cardId, currentColumn.getId(), cancelamento.getId());
     }
 
     public void toggleBlockStatus(int cardId, String reason, boolean block) {
@@ -87,10 +113,12 @@ public class CardService {
 
     public String generateBlockReport(int boardId) {
         StringBuilder report = new StringBuilder();
-        String sql = "SELECT c.title, h.* FROM card_block_history h " +
-                      "JOIN card c ON h.card_id = c.id " +
-                      "JOIN board_column col ON c.column_id = col.id " +
-                      "WHERE col.board_id = ? ORDER BY h.event_time";
+        String sql = "SELECT c.title, h.*, " +
+                     "TIMEDIFF(LEAD(h.event_time) OVER (PARTITION BY h.card_id ORDER BY h.event_time), h.event_time) AS block_duration " +
+                     "FROM card_block_history h " +
+                     "JOIN card c ON h.card_id = c.id " +
+                     "JOIN board_column col ON c.column_id = col.id " +
+                     "WHERE col.board_id = ?";
         
         try (Connection conn = DatabaseConnectionUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -100,11 +128,13 @@ public class CardService {
             
             while(rs.next()) {
                 report.append(String.format(
-                    "Card: %s | Status: %s | Motivo: %s | Data: %s%n",
+                    "Card: %s | Status: %s | Motivo: %s | Data: %s | Duração: %s%n",
                     rs.getString("title"),
                     rs.getBoolean("blocked_status") ? "Bloqueado" : "Desbloqueado",
                     rs.getString("reason"),
-                    rs.getTimestamp("event_time")
+                    rs.getTimestamp("event_time"),
+                    rs.getString("block_duration") != null ? 
+                        rs.getString("block_duration") : "Em andamento"
                 ));
             }
         } catch (SQLException e) {
