@@ -114,39 +114,41 @@ public class CardService {
     public String generateBlockReport(int boardId) {
         StringBuilder report = new StringBuilder();
         String sql = "SELECT "
-                     "  c.title, "
-                     "  h1.event_time AS bloqueio_inicio, "
-                     "  h2.event_time AS bloqueio_fim, "
-                     "  h1.reason AS motivo_bloqueio, "
-                     "  h2.reason AS motivo_desbloqueio, "
-                     "  TIMEDIFF(h2.event_time, h1.event_time) AS duracao "
-                     "FROM card_block_history h1 "
-                     "LEFT JOIN card_block_history h2 "
-                     "  ON h1.card_id = h2.card_id "
-                     "  AND h2.event_time > h1.event_time "
-                     "  AND h2.blocked_status = false "
-                     "JOIN card c ON h1.card_id = c.id "
-                     "JOIN board_column col ON c.column_id = col.id "
-                     "WHERE h1.blocked_status = true "
-                     "AND col.board_id = ?";
-        
-         try (Connection conn = DatabaseConnectionUtil.getConnection();
-         PreparedStatement stmt = conn.prepareStatement(sql)) {
+                   + "  c.title, "
+                   + "  h1.event_time AS bloqueio_inicio, "
+                   + "  h2.event_time AS bloqueio_fim, "
+                   + "  h1.reason AS motivo_bloqueio, "
+                   + "  h2.reason AS motivo_desbloqueio, "
+                   + "  TIMEDIFF(h2.event_time, h1.event_time) AS duracao "
+                   + "FROM card_block_history h1 "
+                   + "LEFT JOIN card_block_history h2 "
+                   + "  ON h1.card_id = h2.card_id "
+                   + "  AND h2.event_time > h1.event_time "
+                   + "  AND h2.blocked_status = false "
+                   + "JOIN card c ON h1.card_id = c.id "
+                   + "JOIN board_column col ON c.column_id = col.id "
+                   + "WHERE h1.blocked_status = true "
+                   + "AND col.board_id = ?";
+
+        try (Connection conn = DatabaseConnectionUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
             
             stmt.setInt(1, boardId);
             ResultSet rs = stmt.executeQuery();
             
             while(rs.next()) {
                 report.append(String.format(
-                    "Card: %s | Status: %s | Motivo: %s | Data: %s | Duração: %s%n",
-                    "Motivo Bloqueio: %s%n"
-                    "Motivo Desbloqueio: %s%n",
+                    "Card: %s%nBloqueio: %s%nDesbloqueio: %s%nDuração: %s%n"
+                    + "Motivo Bloqueio: %s%nMotivo Desbloqueio: %s%n%n",
                     rs.getString("title"),
-                    rs.getBoolean("blocked_status") ? "Bloqueado" : "Desbloqueado",
-                    rs.getString("reason"),
-                    rs.getTimestamp("event_time"),
-                    rs.getString("block_duration") != null ? 
-                        rs.getString("block_duration") : "Em andamento"
+                    rs.getTimestamp("bloqueio_inicio"),
+                    rs.getTimestamp("bloqueio_fim") != null ? 
+                        rs.getTimestamp("bloqueio_fim") : "N/A",
+                    rs.getString("duracao") != null ? 
+                        rs.getString("duracao") : "Em andamento",
+                    rs.getString("motivo_bloqueio"),
+                    rs.getString("motivo_desbloqueio") != null ? 
+                        rs.getString("motivo_desbloqueio") : "N/A"
                 ));
             }
         } catch (SQLException e) {

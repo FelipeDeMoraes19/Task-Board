@@ -21,13 +21,12 @@ public class BoardService {
         board.setName(name);
         boardRepository.save(board);
 
-        // Cria colunas padrão
         createDefaultColumns(board.getId());
     }
 
     private void createDefaultColumns(int boardId) {
         String[][] defaultColumns = {
-            {"Backlog", "Pendente"},
+            {"Backlog", "Inicial"},
             {"Em Andamento", "Pendente"},
             {"Final", "Final"},
             {"Cancelado", "Cancelamento"}

@@ -46,32 +46,45 @@ DELIMITER //
 
 CREATE PROCEDURE ValidateColumnOrder(IN board_id INT)
 BEGIN
-    DECLARE final_order INT;
-    DECLARE cancel_order INT;
+    DECLARE initial_count INT DEFAULT 0;
+    DECLARE final_count INT DEFAULT 0;
+    DECLARE cancel_count INT DEFAULT 0;
+    DECLARE max_order INT DEFAULT 0;
     
-    SELECT column_order INTO final_order 
+    SELECT COUNT(*) INTO initial_count 
     FROM board_column 
     WHERE board_id = board_id 
-    AND type = 'Final';
+    AND type = 'Inicial';
     
-    SELECT column_order INTO cancel_order 
+    IF initial_count != 1 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Deve haver exatamente 1 coluna Inicial';
+    END IF;
+    
+    IF (SELECT column_order FROM board_column WHERE board_id = board_id AND type = 'Inicial') != 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Coluna Inicial deve ser a primeira (posição 0)';
+    END IF;
+    
+    SELECT MAX(column_order) INTO max_order 
+    FROM board_column 
+    WHERE board_id = board_id;
+    
+    SELECT COUNT(*) INTO final_count 
     FROM board_column 
     WHERE board_id = board_id 
-    AND type = 'Cancelamento';
+    AND type = 'Final' 
+    AND column_order = max_order - 1;
     
-    IF final_order >= cancel_order THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Ordem inválida: Coluna Final deve vir antes do Cancelamento';
-    END IF;
+    SELECT COUNT(*) INTO cancel_count 
+    FROM board_column 
+    WHERE board_id = board_id 
+    AND type = 'Cancelamento' 
+    AND column_order = max_order;
     
-    IF (SELECT COUNT(*) FROM board_column WHERE board_id = board_id AND type = 'Final') > 1 THEN
+    IF final_count != 1 OR cancel_count != 1 THEN
         SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Apenas uma coluna Final permitida';
-    END IF;
-    
-    IF (SELECT COUNT(*) FROM board_column WHERE board_id = board_id AND type = 'Cancelamento') > 1 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Apenas uma coluna Cancelamento permitida';
+        SET MESSAGE_TEXT = 'Configuração inválida: Final deve ser penúltima e Cancelamento última';
     END IF;
 END//
 

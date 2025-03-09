@@ -200,7 +200,11 @@ public class MainApplication {
             String name = scanner.nextLine();
             
             List<Column> columns = columnRepository.findByBoardId(boardId);
-            int newOrder = columns.size() - 2;
+            int newOrder = columns.stream()
+                .filter(c -> c.getType().equals("Final"))
+                .findFirst()
+                .map(Column::getColumnOrder)
+                .orElse(columns.size()) - 1;
             
             boardService.addColumn(boardId, name, "Pendente", newOrder);
             System.out.println("Coluna pendente adicionada com sucesso!");

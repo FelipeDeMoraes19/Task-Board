@@ -36,4 +36,11 @@ public class Column {
     public void setBoardId(int boardId) { this.boardId = boardId; }
     public List<Card> getCards() { return cards; }
     public void setCards(List<Card> cards) { this.cards = cards; }
+
+    public boolean isSpecialColumn() {
+        return this.type.equals("Inicial") || 
+               this.type.equals("Final") || 
+               this.type.equals("Cancelamento");
+    }
+    
 }
