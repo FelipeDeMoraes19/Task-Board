@@ -143,12 +143,12 @@ public class CardService {
                     rs.getString("title"),
                     rs.getTimestamp("bloqueio_inicio"),
                     rs.getTimestamp("bloqueio_fim") != null ? 
-                        rs.getTimestamp("bloqueio_fim") : "N/A",
+                    rs.getTimestamp("bloqueio_fim") : "N/A",
                     rs.getString("duracao") != null ? 
-                        rs.getString("duracao") : "Em andamento",
+                    rs.getString("duracao") : "Em andamento",
                     rs.getString("motivo_bloqueio"),
                     rs.getString("motivo_desbloqueio") != null ? 
-                        rs.getString("motivo_desbloqueio") : "N/A"
+                    rs.getString("motivo_desbloqueio") : "N/A"
                 ));
             }
         } catch (SQLException e) {
