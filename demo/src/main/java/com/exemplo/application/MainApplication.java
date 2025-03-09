@@ -83,20 +83,22 @@ public class MainApplication {
             System.out.println("\n=== BOARD MENU ===");
             System.out.println("1. Criar card");
             System.out.println("2. Listar cards");
-            System.out.println("3. Mover card");
-            System.out.println("4. Bloquear/Desbloquear");
-            System.out.println("5. Relatório");
-            System.out.println("6. Voltar");
+            System.out.println("3. Mover card para próxima coluna");
+            System.out.println("4. Cancelar card");
+            System.out.println("5. Bloquear/Desbloquear");
+            System.out.println("6. Relatório");
+            System.out.println("7. Voltar");
             System.out.print("Escolha: ");
             
             String opcao = scanner.nextLine();
             switch (opcao) {
                 case "1": createCard(boardId, scanner); break;
                 case "2": listCards(boardId); break;
-                case "3": moveCard(boardId, scanner); break;
-                case "4": toggleBlock(scanner); break;
-                case "5": generateReport(boardId); break;
-                case "6": inBoardMenu = false; break;
+                case "3": moveToNextColumn(scanner); break;
+                case "4": cancelCard(scanner); break;
+                case "5": toggleBlock(scanner); break;
+                case "6": generateReport(boardId); break;
+                case "7": inBoardMenu = false; break;
                 default: System.out.println("Opção inválida!");
             }
         }
@@ -149,11 +151,10 @@ public class MainApplication {
         }
     }
 
-    private static void moveCard(int boardId, Scanner scanner) {
+    private static void moveToNextColumn(Scanner scanner) {
         try {
             System.out.print("ID do card: ");
             int cardId = Integer.parseInt(scanner.nextLine());
-            
             System.out.print("ID da coluna atual: ");
             int currentColumnId = Integer.parseInt(scanner.nextLine());
             
@@ -164,14 +165,23 @@ public class MainApplication {
         }
     }
 
+    private static void cancelCard(Scanner scanner) {
+        try {
+            System.out.print("ID do card: ");
+            int cardId = Integer.parseInt(scanner.nextLine());
+            cardService.cancelCard(cardId);
+            System.out.println("Card cancelado com sucesso!");
+        } catch (Exception e) {
+            System.out.println("Erro ao cancelar card: " + e.getMessage());
+        }
+    }
+
     private static void toggleBlock(Scanner scanner) {
         try {
             System.out.print("ID do card: ");
             int cardId = Integer.parseInt(scanner.nextLine());
-            
             System.out.print("Motivo: ");
             String motivo = scanner.nextLine();
-            
             System.out.print("Bloquear (S/N)? ");
             boolean bloquear = scanner.nextLine().equalsIgnoreCase("S");
             
