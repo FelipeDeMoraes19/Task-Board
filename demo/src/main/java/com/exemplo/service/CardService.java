@@ -113,15 +113,25 @@ public class CardService {
 
     public String generateBlockReport(int boardId) {
         StringBuilder report = new StringBuilder();
-        String sql = "SELECT c.title, h.*, " +
-                     "TIMEDIFF(LEAD(h.event_time) OVER (PARTITION BY h.card_id ORDER BY h.event_time), h.event_time) AS block_duration " +
-                     "FROM card_block_history h " +
-                     "JOIN card c ON h.card_id = c.id " +
-                     "JOIN board_column col ON c.column_id = col.id " +
-                     "WHERE col.board_id = ?";
+        String sql = "SELECT "
+                     "  c.title, "
+                     "  h1.event_time AS bloqueio_inicio, "
+                     "  h2.event_time AS bloqueio_fim, "
+                     "  h1.reason AS motivo_bloqueio, "
+                     "  h2.reason AS motivo_desbloqueio, "
+                     "  TIMEDIFF(h2.event_time, h1.event_time) AS duracao "
+                     "FROM card_block_history h1 "
+                     "LEFT JOIN card_block_history h2 "
+                     "  ON h1.card_id = h2.card_id "
+                     "  AND h2.event_time > h1.event_time "
+                     "  AND h2.blocked_status = false "
+                     "JOIN card c ON h1.card_id = c.id "
+                     "JOIN board_column col ON c.column_id = col.id "
+                     "WHERE h1.blocked_status = true "
+                     "AND col.board_id = ?";
         
-        try (Connection conn = DatabaseConnectionUtil.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+         try (Connection conn = DatabaseConnectionUtil.getConnection();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
             
             stmt.setInt(1, boardId);
             ResultSet rs = stmt.executeQuery();
@@ -129,6 +139,8 @@ public class CardService {
             while(rs.next()) {
                 report.append(String.format(
                     "Card: %s | Status: %s | Motivo: %s | Data: %s | Duração: %s%n",
+                    "Motivo Bloqueio: %s%n"
+                    "Motivo Desbloqueio: %s%n",
                     rs.getString("title"),
                     rs.getBoolean("blocked_status") ? "Bloqueado" : "Desbloqueado",
                     rs.getString("reason"),
