@@ -21,6 +21,10 @@ public class BoardService {
         board.setName(name);
         board = boardRepository.save(board);
         createDefaultColumns(board.getId());
+        
+        List<Column> columns = columnRepository.findByBoardId(board.getId());
+        validateColumns(columns);
+        
         return board;
     }
 
@@ -37,6 +41,22 @@ public class BoardService {
         column.setType(type);
         column.setColumnOrder(order);
         columnRepository.save(column);
+    }
+
+    private void validateColumns(List<Column> columns) {
+        if(columns.size() < 3) {
+            throw new IllegalStateException("O board deve ter pelo menos 3 colunas");
+        }
+        
+        Column inicial = columns.get(0);
+        Column finalCol = columns.get(columns.size()-2);
+        Column cancelamento = columns.get(columns.size()-1);
+        
+        if(!inicial.getType().equals("Inicial") || 
+           !finalCol.getType().equals("Final") || 
+           !cancelamento.getType().equals("Cancelamento")) {
+            throw new IllegalStateException("Ordem inválida das colunas especiais");
+        }
     }
 
     public List<Board> listAllBoards() {
