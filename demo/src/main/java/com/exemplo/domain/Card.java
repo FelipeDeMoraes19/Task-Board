@@ -8,6 +8,8 @@ public class Card {
     private String description;
     private LocalDateTime createdAt;
     private boolean blocked;
+    private int columnId;
+    private LocalDateTime movedAt
 
     public Card() {
     }
@@ -18,6 +20,22 @@ public class Card {
         this.description = description;
         this.createdAt = createdAt;
         this.blocked = blocked;
+    }
+
+    public LocalDateTime getMovedAt() {
+        return movedAt;
+    }
+
+    public void setMovedAt(LocalDateTime movedAt) {
+        this.movedAt = movedAt;
+    }
+
+    public int getColumnId() {
+        return columnId;
+    }
+
+    public void setColumnId(int columnId) {
+        this.columnId = columnId;
     }
 
     public int getId() {

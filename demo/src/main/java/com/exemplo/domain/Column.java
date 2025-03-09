@@ -7,8 +7,9 @@ public class Column {
     private int id;
     private String name;
     private String type; 
-    private int order;
+    private int columnOrder;
     private List<Card> cards;
+    private int boardId;
 
     public Column() {
         this.cards = new ArrayList<>();
@@ -20,6 +21,22 @@ public class Column {
         this.type = type;
         this.order = order;
         this.cards = new ArrayList<>();
+    }
+
+    public int getColumnOrder() {
+        return columnOrder;
+    }
+
+    public void setColumnOrder(int columnOrder) {
+        this.columnOrder = columnOrder;
+    }
+
+    public int getBoardId() {
+        return boardId;
+    }
+
+    public void setBoardId(int boardId) {
+        this.boardId = boardId;
     }
 
     public int getId() {
@@ -44,14 +61,6 @@ public class Column {
 
     public void setType(String type) {
        this.type = type;
-    }
-
-    public int getOrder() {
-       return order;
-    }
-
-    public void setOrder(int order) {
-       this.order = order;
     }
 
     public List<Card> getCards() {
