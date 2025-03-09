@@ -1,0 +1,8 @@
+com/exemplo/App.class
+com/exemplo/application/MainApplication.class
+com/exemplo/domain/Card.class
+com/exemplo/domain/Column.class
+com/exemplo/repository/BoardRepository.class
+com/exemplo/service/BoardService.class
+com/exemplo/domain/Board.class
+com/exemplo/util/DatabaseConnectionUtil.class
