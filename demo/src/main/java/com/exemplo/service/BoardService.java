@@ -5,9 +5,9 @@ import com.exemplo.domain.Column;
 import com.exemplo.repository.BoardRepository;
 import com.exemplo.repository.ColumnRepository;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 public class BoardService {
-    
     private final BoardRepository boardRepository;
     private final ColumnRepository columnRepository;
 
@@ -16,64 +16,73 @@ public class BoardService {
         this.columnRepository = columnRepository;
     }
 
-    public Board createBoard(String name) {
+    public void createBoard(String name) {
         Board board = new Board();
         board.setName(name);
-        board = boardRepository.save(board);
+        boardRepository.save(board);
+
+        // Cria colunas padrão
         createDefaultColumns(board.getId());
-        
-        List<Column> columns = columnRepository.findByBoardId(board.getId());
-        validateColumns(columns);
-        
-        return board;
     }
 
     private void createDefaultColumns(int boardId) {
-        createColumn(boardId, "To Do", "Inicial", 1);
-        createColumn(boardId, "Done", "Final", 2);
-        createColumn(boardId, "Canceled", "Cancelamento", 3);
+        String[][] defaultColumns = {
+            {"Backlog", "Pendente"},
+            {"Em Andamento", "Pendente"},
+            {"Final", "Final"},
+            {"Cancelado", "Cancelamento"}
+        };
+
+        for (int i = 0; i < defaultColumns.length; i++) {
+            Column column = new Column();
+            column.setBoardId(boardId);
+            column.setName(defaultColumns[i][0]);
+            column.setType(defaultColumns[i][1]);
+            column.setColumnOrder(i);
+            columnRepository.save(column);
+        }
     }
 
-    private void createColumn(int boardId, String name, String type, int order) {
+    public void addColumn(int boardId, String name, String type, int order) {
+        if (!type.equals("Pendente")) {
+            throw new IllegalArgumentException("Somente colunas do tipo Pendente podem ser adicionadas");
+        }
+
         Column column = new Column();
         column.setBoardId(boardId);
         column.setName(name);
         column.setType(type);
         column.setColumnOrder(order);
         columnRepository.save(column);
+
+        reorganizeSpecialColumns(boardId, order);
     }
 
-    private void validateColumns(List<Column> columns) {
-        if(columns.size() < 3) {
-            throw new IllegalStateException("O board deve ter pelo menos 3 colunas");
-        }
+    private void reorganizeSpecialColumns(int boardId, int newOrder) {
+        List<Column> columns = columnRepository.findByBoardId(boardId);
         
-        Column inicial = columns.get(0);
-        Column finalCol = columns.get(columns.size()-2);
-        Column cancelamento = columns.get(columns.size()-1);
-        
-        if(!inicial.getType().equals("Inicial") || 
-           !finalCol.getType().equals("Final") || 
-           !cancelamento.getType().equals("Cancelamento")) {
-            throw new IllegalStateException("Ordem inválida das colunas especiais");
-        }
+        Column finalCol = columns.stream()
+            .filter(c -> c.getType().equals("Final"))
+            .findFirst()
+            .orElseThrow(() -> new NoSuchElementException("Coluna Final não encontrada"));
+
+        Column cancelamento = columns.stream()
+            .filter(c -> c.getType().equals("Cancelamento"))
+            .findFirst()
+            .orElseThrow(() -> new NoSuchElementException("Coluna Cancelamento não encontrada"));
+
+        finalCol.setColumnOrder(newOrder + 1);
+        cancelamento.setColumnOrder(newOrder + 2);
+
+        columnRepository.update(finalCol);
+        columnRepository.update(cancelamento);
     }
 
     public List<Board> listAllBoards() {
         return boardRepository.findAll();
     }
 
-    public Board getBoardWithColumns(int boardId) {
-        Board board = boardRepository.findById(boardId);
-        if(board != null) {
-            List<Column> columns = columnRepository.findByBoardId(boardId);
-            board.setColumns(columns);
-        }
-        return board;
-    }
-
-    public void deleteBoard(int id) {
-        columnRepository.deleteByBoardId(id);
-        boardRepository.deleteById(id);
+    public void deleteBoard(int boardId) {
+        boardRepository.delete(boardId);
     }
 }

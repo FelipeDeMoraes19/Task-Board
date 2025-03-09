@@ -86,8 +86,9 @@ public class MainApplication {
             System.out.println("3. Mover card para próxima coluna");
             System.out.println("4. Cancelar card");
             System.out.println("5. Bloquear/Desbloquear");
-            System.out.println("6. Relatório");
-            System.out.println("7. Voltar");
+            System.out.println("6. Adicionar coluna pendente");
+            System.out.println("7. Relatório");
+            System.out.println("8. Voltar");
             System.out.print("Escolha: ");
             
             String opcao = scanner.nextLine();
@@ -97,8 +98,9 @@ public class MainApplication {
                 case "3": moveToNextColumn(scanner); break;
                 case "4": cancelCard(scanner); break;
                 case "5": toggleBlock(scanner); break;
-                case "6": generateReport(boardId); break;
-                case "7": inBoardMenu = false; break;
+                case "6": addColumn(boardId, scanner); break;
+                case "7": generateReport(boardId); break;
+                case "8": inBoardMenu = false; break;
                 default: System.out.println("Opção inválida!");
             }
         }
@@ -189,6 +191,21 @@ public class MainApplication {
             System.out.println("Status do card atualizado!");
         } catch (Exception e) {
             System.out.println("Erro ao alterar status: " + e.getMessage());
+        }
+    }
+
+    private static void addColumn(int boardId, Scanner scanner) {
+        try {
+            System.out.print("Nome da nova coluna: ");
+            String name = scanner.nextLine();
+            
+            List<Column> columns = columnRepository.findByBoardId(boardId);
+            int newOrder = columns.size() - 2;
+            
+            boardService.addColumn(boardId, name, "Pendente", newOrder);
+            System.out.println("Coluna pendente adicionada com sucesso!");
+        } catch (Exception e) {
+            System.out.println("Erro ao adicionar coluna: " + e.getMessage());
         }
     }
 
