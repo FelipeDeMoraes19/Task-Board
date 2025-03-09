@@ -43,41 +43,50 @@ CREATE TABLE IF NOT EXISTS card_block_history (
 );
 
 DELIMITER //
+
 CREATE PROCEDURE ValidateColumnOrder(IN board_id INT)
 BEGIN
-    DECLARE initial_count INT DEFAULT 0;
-    DECLARE final_count INT DEFAULT 0;
-    DECLARE cancel_count INT DEFAULT 0;
-    DECLARE max_order INT DEFAULT 0;
+    DECLARE final_order INT;
+    DECLARE cancel_order INT;
     
-    SELECT COUNT(*) INTO initial_count 
+    SELECT column_order INTO final_order 
     FROM board_column 
     WHERE board_id = board_id 
-    AND type = 'Inicial' 
-    AND column_order = 1;
-
-    SELECT MAX(column_order) INTO max_order 
-    FROM board_column 
-    WHERE board_id = board_id;
-
-    SELECT COUNT(*) INTO final_count 
+    AND type = 'Final';
+    
+    SELECT column_order INTO cancel_order 
     FROM board_column 
     WHERE board_id = board_id 
-    AND type = 'Final' 
-    AND column_order = max_order - 1;
-
-    SELECT COUNT(*) INTO cancel_count 
-    FROM board_column 
-    WHERE board_id = board_id 
-    AND type = 'Cancelamento' 
-    AND column_order = max_order;
-
-    IF initial_count != 1 OR final_count != 1 OR cancel_count != 1 THEN
+    AND type = 'Cancelamento';
+    
+    IF final_order >= cancel_order THEN
         SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Configuração inválida de colunas especiais: 
-                            Deve haver 1 coluna Inicial (posição 1), 
-                            1 coluna Final (penúltima posição) e 
-                            1 coluna Cancelamento (última posição)';
+        SET MESSAGE_TEXT = 'Ordem inválida: Coluna Final deve vir antes do Cancelamento';
+    END IF;
+    
+    IF (SELECT COUNT(*) FROM board_column WHERE board_id = board_id AND type = 'Final') > 1 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Apenas uma coluna Final permitida';
+    END IF;
+    
+    IF (SELECT COUNT(*) FROM board_column WHERE board_id = board_id AND type = 'Cancelamento') > 1 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Apenas uma coluna Cancelamento permitida';
     END IF;
 END//
+
+CREATE TRIGGER AfterColumnInsert
+AFTER INSERT ON board_column
+FOR EACH ROW
+BEGIN
+    CALL ValidateColumnOrder(NEW.board_id);
+END//
+
+CREATE TRIGGER AfterColumnUpdate
+AFTER UPDATE ON board_column
+FOR EACH ROW
+BEGIN
+    CALL ValidateColumnOrder(NEW.board_id);
+END//
+
 DELIMITER ;
