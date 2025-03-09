@@ -67,6 +67,10 @@ public class MainApplication {
 
     private static void selectBoard(Scanner scanner) {
         List<Board> boards = boardService.listAllBoards();
+        if(boards.isEmpty()) {
+            System.out.println("Nenhum board cadastrado!");
+            return;
+        }
         boards.forEach(b -> System.out.println(b.getId() + " - " + b.getName()));
         System.out.print("ID do board: ");
         int boardId = Integer.parseInt(scanner.nextLine());
@@ -85,10 +89,11 @@ public class MainApplication {
             System.out.println("6. Voltar");
             System.out.print("Escolha: ");
             
-            switch (scanner.nextLine()) {
+            String opcao = scanner.nextLine();
+            switch (opcao) {
                 case "1": createCard(boardId, scanner); break;
                 case "2": listCards(boardId); break;
-                case "3": moveCard(scanner); break;
+                case "3": moveCard(boardId, scanner); break;
                 case "4": toggleBlock(scanner); break;
                 case "5": generateReport(boardId); break;
                 case "6": inBoardMenu = false; break;
@@ -98,35 +103,106 @@ public class MainApplication {
     }
 
     private static void createCard(int boardId, Scanner scanner) {
-        List<Column> columns = columnRepository.findByBoardId(boardId);
-        Column firstColumn = columns.get(0);
-        
-        System.out.print("Título: ");
-        String title = scanner.nextLine();
-        System.out.print("Descrição: ");
-        String desc = scanner.nextLine();
-        
-        Card newCard = new Card();
-        newCard.setTitle(title);
-        newCard.setDescription(desc);
-        newCard.setCreatedAt(LocalDateTime.now());
-        newCard.setMovedAt(LocalDateTime.now());
-        newCard.setColumnId(firstColumn.getId());
-        
-        cardRepository.save(newCard);
-        System.out.println("Card criado!");
-    }
-
-    private static void listCards(int boardId) {
-        List<Column> columns = columnRepository.findByBoardId(boardId);
-        for (Column column : columns) {
-            System.out.println("\nColuna: " + column.getName());
-            List<Card> cards = cardRepository.findByColumnId(column.getId());
-            cards.forEach(c -> System.out.println(" - " + c.getTitle()));
+        try {
+            List<Column> columns = columnRepository.findByBoardId(boardId);
+            Column firstColumn = columns.get(0);
+            
+            System.out.print("Título: ");
+            String title = scanner.nextLine();
+            System.out.print("Descrição: ");
+            String desc = scanner.nextLine();
+            
+            Card newCard = new Card();
+            newCard.setTitle(title);
+            newCard.setDescription(desc);
+            newCard.setCreatedAt(LocalDateTime.now());
+            newCard.setMovedAt(LocalDateTime.now());
+            newCard.setColumnId(firstColumn.getId());
+            
+            cardRepository.save(newCard);
+            System.out.println("Card criado com sucesso!");
+        } catch (Exception e) {
+            System.out.println("Erro ao criar card: " + e.getMessage());
         }
     }
 
+    private static void listCards(int boardId) {
+        try {
+            List<Column> columns = columnRepository.findByBoardId(boardId);
+            if(columns.isEmpty()) {
+                System.out.println("Nenhuma coluna encontrada!");
+                return;
+            }
+            
+            for (Column column : columns) {
+                System.out.println("\n[" + column.getType() + "] " + column.getName());
+                List<Card> cards = cardRepository.findByColumnId(column.getId());
+                if(cards.isEmpty()) {
+                    System.out.println("  - Nenhum card nesta coluna");
+                } else {
+                    cards.forEach(c -> System.out.printf("  %d - %s %s%n", 
+                        c.getId(), c.getTitle(), c.isBlocked() ? "(BLOQUEADO)" : ""));
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Erro ao listar cards: " + e.getMessage());
+        }
+    }
+
+    private static void moveCard(int boardId, Scanner scanner) {
+        try {
+            System.out.print("ID do card: ");
+            int cardId = Integer.parseInt(scanner.nextLine());
+            
+            System.out.print("ID da coluna atual: ");
+            int currentColumnId = Integer.parseInt(scanner.nextLine());
+            
+            cardService.moveCardToNextColumn(cardId, currentColumnId);
+            System.out.println("Card movido com sucesso!");
+        } catch (Exception e) {
+            System.out.println("Erro ao mover card: " + e.getMessage());
+        }
+    }
+
+    private static void toggleBlock(Scanner scanner) {
+        try {
+            System.out.print("ID do card: ");
+            int cardId = Integer.parseInt(scanner.nextLine());
+            
+            System.out.print("Motivo: ");
+            String motivo = scanner.nextLine();
+            
+            System.out.print("Bloquear (S/N)? ");
+            boolean bloquear = scanner.nextLine().equalsIgnoreCase("S");
+            
+            cardService.toggleBlockStatus(cardId, motivo, bloquear);
+            System.out.println("Status do card atualizado!");
+        } catch (Exception e) {
+            System.out.println("Erro ao alterar status: " + e.getMessage());
+        }
+    }
 
     private static void generateReport(int boardId) {
+        try {
+            String relatorio = cardService.generateBlockReport(boardId);
+            System.out.println("\n=== RELATÓRIO DE BLOQUEIOS ===");
+            System.out.println(relatorio);
+        } catch (Exception e) {
+            System.out.println("Erro ao gerar relatório: " + e.getMessage());
+        }
+    }
+
+    private static void deleteBoards(Scanner scanner) {
+        try {
+            System.out.print("IDs dos boards para excluir (separados por vírgula): ");
+            String[] ids = scanner.nextLine().split(",");
+            
+            for(String id : ids) {
+                boardService.deleteBoard(Integer.parseInt(id.trim()));
+            }
+            System.out.println("Boards excluídos com sucesso!");
+        } catch (Exception e) {
+            System.out.println("Erro ao excluir boards: " + e.getMessage());
+        }
     }
 }
